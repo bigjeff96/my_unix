@@ -26,10 +26,12 @@ int main(int argc, char** argv)
     gb_array_init(things, gb_heap_allocator());
     defer(gb_array_free(things));
 
+    // very cool change right now
+
     //TODO: Learn how to fail the program with grace
 
     //TODO: dealings with flags like -a and -sh
-    //TODO: with multiple directories, do a listing of each directory one after the other                               
+    //TODO: with multiple directories, do a listing of each directory one after the other
     if (argc == 1) {
         d = opendir(".");
     } else if (argc == 2) {
