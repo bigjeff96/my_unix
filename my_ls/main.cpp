@@ -70,23 +70,28 @@ int main(int argc, char** argv)
     return 0;
 }
 
-// HIHI
 
 //TODO: Align the columns correctly (especially for file sizes)
 void print_file(dirent* file, Stat* sb)
 {
-    char color[50] = NORMAL_COLOR;
-    char file_size[255] = {};
+    gb_local_persist gbString color = gb_string_make_reserve(gb_heap_allocator(), 256);
+    gb_local_persist gbString file_size = gb_string_make_reserve(gb_heap_allocator(), 256);
+    defer(gb_string_clear(color));
+    defer(gb_string_clear(file_size));
 
     if (file->d_type == DT_DIR) {
-        gb_memcopy(color, BLUE, sizeof(BLUE));
+        gb_string_appendc(color, BLUE);
+        gb_string_appendc(color, BOLD);
     } else if (sb->st_mode & S_IEXEC) {
-        gb_memcopy(color, GREEN, sizeof(GREEN));
-    } 
+        gb_string_appendc(color, GREEN);
+        gb_string_appendc(color, BOLD);
+    } else {
+        gb_string_appendc(color, NORMAL_COLOR);
+    }
 
     if (BITTEST(flags, SHOW_FILE_SIZE)) {
-        gb_snprintf(file_size, 100, "%s%0.1f KB ", NORMAL_COLOR, f32(sb->st_size / 1024.));
+        gb_string_append_fmt(file_size, "%s%0.1f KB ", NORMAL_COLOR, f32(sb->st_size / 1024.));
     }
-    gb_printf("%s%s%s%s\n", file_size, color, BOLD, file->d_name);
+    gb_printf("%s%s%s\n", file_size, color, file->d_name);
 }
 // printf("Last file modification:   %s", ctime(&sb.st_mtime));
