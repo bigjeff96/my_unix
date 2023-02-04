@@ -1,4 +1,3 @@
-#include <cstdlib>
 #define GB_IMPLEMENTATION
 #include "../lib/bitset.h"
 #include "../lib/gb.h"
