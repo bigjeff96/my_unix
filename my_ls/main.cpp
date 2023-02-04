@@ -70,6 +70,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
+//TODO: Align the columns correctly (especially for file sizes)
 void print_file(dirent* file, Stat* sb)
 {
     char color[50] = NORMAL_COLOR;
@@ -79,10 +80,10 @@ void print_file(dirent* file, Stat* sb)
         gb_memcopy(color, BLUE, sizeof(BLUE));
     } else if (sb->st_mode & S_IEXEC) {
         gb_memcopy(color, GREEN, sizeof(GREEN));
-    }
+    } 
 
     if (BITTEST(flags, SHOW_FILE_SIZE)) {
-        gb_snprintf(file_size, 100, "%s%ld bytes\t", NORMAL_COLOR, (isize)sb->st_size);
+        gb_snprintf(file_size, 100, "%s%0.1f KB ", NORMAL_COLOR, f32(sb->st_size / 1024.));
     }
     gb_printf("%s%s%s%s\n", file_size, color, BOLD, file->d_name);
 }
