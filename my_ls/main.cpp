@@ -25,7 +25,6 @@ int main(int argc, char** argv)
     defer(gb_array_free(files));
 
     int opt;
-    int* p_optind = &optind;
 
     while ((opt = getopt(argc, argv, "as")) != -1) {
         switch (opt) {
@@ -41,10 +40,10 @@ int main(int argc, char** argv)
         }
     }
     // TODO: with multiple directories, do a listing of each directory one after the other
-    if (*p_optind >= argc) {
+    if (optind >= argc) {
         d = opendir(".");
     } else {
-        d = opendir(argv[*p_optind]);
+        d = opendir(argv[optind]);
     }
 
     GB_ASSERT_NOT_NULL(d);
@@ -59,12 +58,12 @@ int main(int argc, char** argv)
 
     defer(printf("%s", NORMAL_COLOR));
     for (int i = 0; i < gb_array_count(files); i++) {
-
-        Stat sb = {};
-        stat(files[i].d_name, &sb);
-
         if ((files[i].d_name[0] == '.' && !BITTEST(flags, SHOW_DOT_FILES)))
             continue;
+        
+        Stat sb = {};
+        stat(files[i].d_name, &sb);
+        
         print_file(&files[i], &sb);
     }
     return 0;

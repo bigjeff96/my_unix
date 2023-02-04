@@ -5,6 +5,6 @@ DFLAGS="-Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-variable -Wno-unused
 MEM="-fsanitize=address"
 
 set -e
-time $CC  $DFLAGS -O0  -I . *.cpp -o my_ls.exe
+time $CC  $DFLAGS  -I . *.cpp -o my_ls.exe
 echo "--OUTPUT--"
 ./my_ls.exe -a
