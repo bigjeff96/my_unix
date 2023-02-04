@@ -70,6 +70,8 @@ int main(int argc, char** argv)
     return 0;
 }
 
+// HIHI
+
 //TODO: Align the columns correctly (especially for file sizes)
 void print_file(dirent* file, Stat* sb)
 {
