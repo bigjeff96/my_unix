@@ -47,6 +47,7 @@ int main(int argc, char** argv)
         d = opendir(argv[*p_optind]);
     }
 
+    // test
     GB_ASSERT_NOT_NULL(d);
     defer(closedir(d));
 
