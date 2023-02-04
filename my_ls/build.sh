@@ -7,4 +7,4 @@ MEM="-fsanitize=address"
 set -e
 time $CC  $DFLAGS  -I . *.cpp -o my_ls
 echo "--OUTPUT--"
-time ./my_ls ~
+./my_ls  -s ~
