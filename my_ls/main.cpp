@@ -89,7 +89,7 @@ void print_file(dirent* file, Stat* sb)
     }
 
     if (BITTEST(flags, SHOW_FILE_SIZE)) {
-        gb_string_append_fmt(file_size, "%s%0.1f KB ", NORMAL_COLOR, f32(sb->st_size / 1024.));
+        gb_string_append_fmt(file_size, "%s%0.1f KB ", NORMAL_COLOR, f32(sb->st_size * 1.0 / gb_kilobytes(1)));
     }
     gb_printf("%s%s%s\n", file_size, color, file->d_name);
 }
