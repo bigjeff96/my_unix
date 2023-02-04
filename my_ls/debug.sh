@@ -1,3 +1,3 @@
 #!/usr/bin/bash
 
-gf my_ls 
+gf my_ls.exe
