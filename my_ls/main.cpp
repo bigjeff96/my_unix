@@ -11,7 +11,7 @@
 #define RED "\x1B[31m"
 #define BOLD "\x1B[1m"
 typedef struct stat Stat;
-typedef enum FLAGS { SHOW_DOT_FILES, SHOW_FILE_SIZE, FLAGS_COUNT } FLAGS;
+typedef enum { SHOW_DOT_FILES, SHOW_FILE_SIZE, FLAGS_COUNT } FLAGS;
 
 void print_file(dirent* file, Stat* sb);
 
