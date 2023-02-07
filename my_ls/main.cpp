@@ -86,10 +86,8 @@ int main(int argc, char** argv)
         if (error != 0) {
             i32 padding = BITTEST(flags, SHOW_LAST_MOD_DATE) ? 14 : 0;
             gb_local_persist auto zero_bytes = gb_string_make_reserve(gb_heap_allocator(), 100);
-            if (BITTEST(flags, SHOW_FILE_SIZE)) {
+            if (BITTEST(flags, SHOW_FILE_SIZE))
                 zero_bytes = gb_string_append_fmt(zero_bytes, "%5d  B", 0);
-            } else
-                zero_bytes = gb_string_appendc(zero_bytes, "\0");
 
             if (padding != 0)
                 gb_printf("%s%*c%s%s%s", zero_bytes, padding, ' ', BOLD, RED_BACKGROUND, files[i].d_name);
