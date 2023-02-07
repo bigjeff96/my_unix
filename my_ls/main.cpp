@@ -54,7 +54,7 @@ int main(int argc, char** argv)
         d = opendir(argv[*p_optind]);
     }
     if (!d) {
-        fprintf(stderr, "%s%s\n", NORMAL_COLOR, strerror(errno));
+        gb_printf_err("%s%s\n", NORMAL_COLOR, strerror(errno));
         gb_exit(1);
     }
     defer(closedir(d));
