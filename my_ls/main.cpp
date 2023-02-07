@@ -55,10 +55,10 @@ int main(int argc, char** argv)
     defer(closedir(d));
 
     dirent* current_d = NULL;
-    while (current_d = readdir(d)) {
+    while ((current_d = readdir(d))) {
         gb_array_append(files, *current_d);
     }
-    gb_sort_array(files, gb_array_count(files), sort_files_and_dirs);
+     gb_sort_array(files, gb_array_count(files), sort_files_and_dirs);
 
     defer(printf("%s", NORMAL_COLOR));
     for (int i = 0; i < gb_array_count(files); i++) {
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
         auto error = stat(full_path, &sb);
         if (error != 0) {
             fprintf(stderr, "%s%s: %s\n", NORMAL_COLOR, strerror(errno), full_path);
-            gb_exit(1);
+            continue;
         }
 
         print_file(&files[i], &sb);
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 
 void print_file(dirent* file, Stat* sb)
 {
-    gb_local_persist gbString color_str = gb_string_make_reserve(gb_heap_allocator(), 256);
+    gb_local_persist gbString color_str = gb_string_make_reserve(gb_heap_allocator(), 20);
     gb_local_persist gbString file_size_str = gb_string_make_reserve(gb_heap_allocator(), 256);
     defer(gb_string_clear(color_str));
     defer(gb_string_clear(file_size_str));
@@ -132,19 +132,25 @@ void print_file(dirent* file, Stat* sb)
     }
     gb_printf("%s%s%s\n", file_size_str, color_str, file->d_name);
 }
-// printf("Last file modification:   %s", ctime(&sb.st_mtime));
 
 int sort_files_and_dirs(const void* a, const void* b)
 {
     dirent* a_file = (dirent*)a;
     dirent* b_file = (dirent*)b;
+    i32 a_dot_shift = 0;
+    i32 b_dot_shift = 0;
+
+    if (a_file->d_name[0] == '.')
+        a_dot_shift++;
+    if (b_file->d_name[0] == '.')
+        b_dot_shift++;
 
     if (a_file->d_type == DT_DIR && b_file->d_type == DT_DIR) {
-        return gb_strcmp(a_file->d_name, b_file->d_name);
+        return gb_strcmp(a_file->d_name + a_dot_shift, b_file->d_name + b_dot_shift);
     }
 
     if (a_file->d_type != DT_DIR && b_file->d_type != DT_DIR) {
-        return gb_strcmp(a_file->d_name, b_file->d_name);
+        return gb_strcmp(a_file->d_name + a_dot_shift, b_file->d_name + b_dot_shift);
     }
 
     if (a_file->d_type == DT_DIR) {
@@ -156,3 +162,4 @@ int sort_files_and_dirs(const void* a, const void* b)
     GB_PANIC("Shouldn't be here\n");
     return 0;
 }
+// printf("Last file modification:   %s", ctime(&sb.st_mtime));
