@@ -90,8 +90,13 @@ int main(int argc, char** argv)
                 zero_bytes = gb_string_append_fmt(zero_bytes, "%5d  B", 0);
             } else
                 zero_bytes = gb_string_appendc(zero_bytes, "\0");
+
+            if (padding != 0)
+                gb_printf("%s%*c%s%s%s", zero_bytes, padding, ' ', BOLD, RED_BACKGROUND, files[i].d_name);
+            else
+                gb_printf("%s%s%s%s", zero_bytes, BOLD, RED_BACKGROUND, files[i].d_name);
             
-            gb_printf("%s%*c%s%s%s\n", zero_bytes, padding, ' ', BOLD, RED_BACKGROUND, files[i].d_name);
+            gb_printf("%s%s\n", DEFAULT_BACKGROUND, NORMAL_COLOR);
             continue;
         }
         
