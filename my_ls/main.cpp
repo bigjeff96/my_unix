@@ -16,6 +16,7 @@ typedef struct stat Stat;
 typedef enum { SHOW_DOT_FILES, SHOW_FILE_SIZE, FLAGS_COUNT } FLAGS;
 
 void print_file(dirent* file, Stat* sb);
+int sort_files_and_dirs(const void* a, const void* b);
 
 gb_global b8 flags[BITNSLOTS(FLAGS_COUNT)] = {};
 
@@ -47,16 +48,17 @@ int main(int argc, char** argv)
     } else {
         d = opendir(argv[*p_optind]);
     }
-
-    GB_ASSERT_NOT_NULL(d);
+    if (!d) {
+        fprintf(stderr, "%s%s\n", NORMAL_COLOR, strerror(errno));
+        gb_exit(1);
+    }
     defer(closedir(d));
 
     dirent* current_d = NULL;
     while (current_d = readdir(d)) {
         gb_array_append(files, *current_d);
     }
-    // TODO: put the directories on top of the list (and "." and ".." always on top)
-    gb_sort_array(files, gb_array_count(files), gb_str_cmp(gb_offset_of(dirent, d_name)));
+    gb_sort_array(files, gb_array_count(files), sort_files_and_dirs);
 
     defer(printf("%s", NORMAL_COLOR));
     for (int i = 0; i < gb_array_count(files); i++) {
@@ -66,7 +68,7 @@ int main(int argc, char** argv)
         gb_local_persist gbString full_path = gb_string_make_reserve(gb_heap_allocator(), 256);
         defer(gb_string_clear(full_path));
         gb_string_appendc(full_path, argv[*p_optind]);
-        
+
         // make sure that the last character in full_path is "/"
         auto length = gb_string_length(full_path);
         if (full_path[length - 1] != '/' && *p_optind < argc) {
@@ -76,9 +78,9 @@ int main(int argc, char** argv)
 
         Stat sb = {};
         auto error = stat(full_path, &sb);
-        if ( error != 0) {
+        if (error != 0) {
             fprintf(stderr, "%s%s: %s\n", NORMAL_COLOR, strerror(errno), full_path);
-            exit(1);
+            gb_exit(1);
         }
 
         print_file(&files[i], &sb);
@@ -104,30 +106,53 @@ void print_file(dirent* file, Stat* sb)
     }
     if (BITTEST(flags, SHOW_FILE_SIZE)) {
         f32 file_size = sb->st_size;
-        gb_local_persist gbString unit_str = gb_string_make_reserve(gb_heap_allocator(), 5);                            
+        gb_local_persist gbString unit_str = gb_string_make_reserve(gb_heap_allocator(), 5);
         gb_string_appendc(unit_str, " B");
         defer(gb_string_clear(unit_str));
-        
+
         if (file_size > gb_kilobytes(1) && file_size < gb_megabytes(1)) {
             gb_string_clear(unit_str);
             gb_string_appendc(unit_str, "KB");
             file_size /= gb_kilobytes(1);
-        } else if ( file_size > gb_megabytes(1) && file_size < gb_gigabytes(1)) {
+        } else if (file_size > gb_megabytes(1) && file_size < gb_gigabytes(1)) {
             gb_string_clear(unit_str);
             gb_string_appendc(unit_str, "MB");
             file_size /= gb_megabytes(1);
-        } else if ( file_size > gb_gigabytes(1) && file_size < gb_terabytes(1)) {
+        } else if (file_size > gb_gigabytes(1) && file_size < gb_terabytes(1)) {
             gb_string_clear(unit_str);
             gb_string_appendc(unit_str, "GB");
             file_size /= gb_gigabytes(1);
-        } else if ( file_size > gb_terabytes(1)) {
+        } else if (file_size > gb_terabytes(1)) {
             gb_string_clear(unit_str);
             gb_string_appendc(unit_str, "TB");
             file_size /= gb_terabytes(1);
         }
-        
+
         gb_string_append_fmt(file_size_str, "%s%5.1f %s ", NORMAL_COLOR, file_size, unit_str);
     }
     gb_printf("%s%s%s\n", file_size_str, color_str, file->d_name);
 }
 // printf("Last file modification:   %s", ctime(&sb.st_mtime));
+
+int sort_files_and_dirs(const void* a, const void* b)
+{
+    dirent* a_file = (dirent*)a;
+    dirent* b_file = (dirent*)b;
+
+    if (a_file->d_type == DT_DIR && b_file->d_type == DT_DIR) {
+        return gb_strcmp(a_file->d_name, b_file->d_name);
+    }
+
+    if (a_file->d_type != DT_DIR && b_file->d_type != DT_DIR) {
+        return gb_strcmp(a_file->d_name, b_file->d_name);
+    }
+
+    if (a_file->d_type == DT_DIR) {
+        return -1;
+    } else {
+        return +1;
+    }
+
+    GB_PANIC("Shouldn't be here\n");
+    return 0;
+}
