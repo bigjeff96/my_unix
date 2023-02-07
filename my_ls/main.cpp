@@ -12,8 +12,10 @@
 #define BLUE "\x1B[34m"
 #define RED "\x1B[31m"
 #define BOLD "\x1B[1m"
+#define RED_BACKGROUND "\x1B[41m"
+#define DEFAULT_BACKGROUND "\x1B[49m"
 typedef struct stat Stat;
-typedef enum { SHOW_DOT_FILES, SHOW_FILE_SIZE, FLAGS_COUNT } FLAGS;
+typedef enum { SHOW_DOT_FILES, SHOW_FILE_SIZE, SHOW_LAST_MOD_DATE,FLAGS_COUNT } FLAGS;
 
 void print_file(dirent* file, Stat* sb);
 int sort_files_and_dirs(const void* a, const void* b);
@@ -28,7 +30,7 @@ int main(int argc, char** argv)
     defer(gb_array_free(files));
 
     int opt;
-    while ((opt = getopt(argc, argv, "as")) != -1) {
+    while ((opt = getopt(argc, argv, "als")) != -1) {
         switch (opt) {
         case 'a':
             BITSET(flags, SHOW_DOT_FILES);
@@ -36,13 +38,16 @@ int main(int argc, char** argv)
         case 's':
             BITSET(flags, SHOW_FILE_SIZE);
             break;
+        case 'l':
+            BITSET(flags, SHOW_LAST_MOD_DATE);
+            BITSET(flags, SHOW_FILE_SIZE);
+            break;
         default:
-            gb_printf_err("Usage: %s [-as] [directory...]\n", argv[0]);
+            gb_printf_err("Usage: %s [-asl] [directory...]\n", argv[0]);
             gb_exit(1);
         }
     }
     int* p_optind = &optind;
-    // TODO: with multiple directories, do a listing of each directory one after the other
     if (*p_optind >= argc) {
         d = opendir(".");
     } else {
@@ -58,7 +63,7 @@ int main(int argc, char** argv)
     while ((current_d = readdir(d))) {
         gb_array_append(files, *current_d);
     }
-     gb_sort_array(files, gb_array_count(files), sort_files_and_dirs);
+    gb_sort_array(files, gb_array_count(files), sort_files_and_dirs);
 
     defer(printf("%s", NORMAL_COLOR));
     for (int i = 0; i < gb_array_count(files); i++) {
@@ -79,10 +84,17 @@ int main(int argc, char** argv)
         Stat sb = {};
         auto error = stat(full_path, &sb);
         if (error != 0) {
-            fprintf(stderr, "%s%s: %s\n", NORMAL_COLOR, strerror(errno), full_path);
+            i32 padding = BITTEST(flags, SHOW_LAST_MOD_DATE) ? 14 : 0;
+            gb_local_persist auto zero_bytes = gb_string_make_reserve(gb_heap_allocator(), 100);
+            if (BITTEST(flags, SHOW_FILE_SIZE)) {
+                zero_bytes = gb_string_append_fmt(zero_bytes, "%5d  B", 0);
+            } else
+                zero_bytes = gb_string_appendc(zero_bytes, "\0");
+            
+            gb_printf("%s%*c%s%s%s\n", zero_bytes, padding, ' ', BOLD, RED_BACKGROUND, files[i].d_name);
             continue;
         }
-
+        
         print_file(&files[i], &sb);
     }
     return 0;
@@ -90,47 +102,66 @@ int main(int argc, char** argv)
 
 void print_file(dirent* file, Stat* sb)
 {
-    gb_local_persist gbString color_str = gb_string_make_reserve(gb_heap_allocator(), 20);
-    gb_local_persist gbString file_size_str = gb_string_make_reserve(gb_heap_allocator(), 256);
-    defer(gb_string_clear(color_str));
-    defer(gb_string_clear(file_size_str));
+    gb_local_persist char* buffer = (char*)gb_malloc(gb_kilobytes(3));
+    gbArena arena = {};
+    gb_arena_init_from_memory(&arena, buffer, gb_kilobytes(3));
+    auto allocator = gb_arena_allocator(&arena);
+    auto temp = gb_temp_arena_memory_begin(&arena);
+    defer(gb_temp_arena_memory_end(temp));
+    
+    auto color_str = gb_string_make_reserve(allocator, 20);
+    auto unit_str = gb_string_make_reserve(allocator, 5);
+    auto file_size_str = gb_string_make_reserve(allocator, 256);
+    auto last_mod_full_str = gb_string_make_reserve(allocator, 256);
 
     if (file->d_type == DT_DIR) {
-        gb_string_appendc(color_str, BLUE);
-        gb_string_appendc(color_str, BOLD);
+        color_str = gb_string_appendc(color_str, BLUE);
+        color_str = gb_string_appendc(color_str, BOLD);
     } else if (sb->st_mode & S_IEXEC) {
-        gb_string_appendc(color_str, GREEN);
-        gb_string_appendc(color_str, BOLD);
+        color_str = gb_string_appendc(color_str, GREEN);
+        color_str = gb_string_appendc(color_str, BOLD);
     } else {
-        gb_string_appendc(color_str, NORMAL_COLOR);
+        color_str = gb_string_appendc(color_str, NORMAL_COLOR);
     }
     if (BITTEST(flags, SHOW_FILE_SIZE)) {
         f32 file_size = sb->st_size;
-        gb_local_persist gbString unit_str = gb_string_make_reserve(gb_heap_allocator(), 5);
-        gb_string_appendc(unit_str, " B");
+        unit_str = gb_string_appendc(unit_str, " B");
         defer(gb_string_clear(unit_str));
 
         if (file_size > gb_kilobytes(1) && file_size < gb_megabytes(1)) {
             gb_string_clear(unit_str);
-            gb_string_appendc(unit_str, "KB");
+            unit_str = gb_string_appendc(unit_str, "KB");
             file_size /= gb_kilobytes(1);
         } else if (file_size > gb_megabytes(1) && file_size < gb_gigabytes(1)) {
             gb_string_clear(unit_str);
-            gb_string_appendc(unit_str, "MB");
+            unit_str = gb_string_appendc(unit_str, "MB");
             file_size /= gb_megabytes(1);
         } else if (file_size > gb_gigabytes(1) && file_size < gb_terabytes(1)) {
             gb_string_clear(unit_str);
-            gb_string_appendc(unit_str, "GB");
+            unit_str = gb_string_appendc(unit_str, "GB");
             file_size /= gb_gigabytes(1);
         } else if (file_size > gb_terabytes(1)) {
             gb_string_clear(unit_str);
-            gb_string_appendc(unit_str, "TB");
+            unit_str = gb_string_appendc(unit_str, "TB");
             file_size /= gb_terabytes(1);
         }
-
-        gb_string_append_fmt(file_size_str, "%s%5.1f %s ", NORMAL_COLOR, file_size, unit_str);
+        file_size_str = gb_string_append_fmt(file_size_str, "%s%5.1f %s ", NORMAL_COLOR, file_size, unit_str);
     }
-    gb_printf("%s%s%s\n", file_size_str, color_str, file->d_name);
+
+    gbString last_mod_str = NULL;
+
+    if (BITTEST(flags, SHOW_LAST_MOD_DATE)) {
+        last_mod_full_str = gb_string_append_fmt(last_mod_full_str,"%s", ctime(&sb->st_mtime));
+        last_mod_full_str = gb_string_trim(last_mod_full_str, "\n");
+        auto length = gb_string_length(last_mod_full_str);
+        last_mod_str = gb_string_make_reserve(allocator, 50);
+        last_mod_str = gb_string_append_length(last_mod_str, last_mod_full_str + 4, length - 12);
+        last_mod_str = gb_string_appendc(last_mod_str, " ");
+    } else {
+        last_mod_str = gb_string_make(allocator, "");
+    }
+    
+    gb_printf("%s%s%s%s\n", file_size_str, last_mod_str, color_str, file->d_name);
 }
 
 int sort_files_and_dirs(const void* a, const void* b)
@@ -162,4 +193,3 @@ int sort_files_and_dirs(const void* a, const void* b)
     GB_PANIC("Shouldn't be here\n");
     return 0;
 }
-// printf("Last file modification:   %s", ctime(&sb.st_mtime));
