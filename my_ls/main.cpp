@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #define GB_IMPLEMENTATION
 #include "../lib/bitset.h"
 #include "../lib/gb.h"
@@ -25,7 +27,6 @@ int main(int argc, char** argv)
     defer(gb_array_free(files));
 
     int opt;
-
     while ((opt = getopt(argc, argv, "as")) != -1) {
         switch (opt) {
         case 'a':
@@ -39,11 +40,12 @@ int main(int argc, char** argv)
             gb_exit(1);
         }
     }
+    int* p_optind = &optind;
     // TODO: with multiple directories, do a listing of each directory one after the other
-    if (optind >= argc) {
+    if (*p_optind >= argc) {
         d = opendir(".");
     } else {
-        d = opendir(argv[optind]);
+        d = opendir(argv[*p_optind]);
     }
 
     GB_ASSERT_NOT_NULL(d);
@@ -60,37 +62,72 @@ int main(int argc, char** argv)
     for (int i = 0; i < gb_array_count(files); i++) {
         if ((files[i].d_name[0] == '.' && !BITTEST(flags, SHOW_DOT_FILES)))
             continue;
+
+        gb_local_persist gbString full_path = gb_string_make_reserve(gb_heap_allocator(), 256);
+        defer(gb_string_clear(full_path));
+        gb_string_appendc(full_path, argv[*p_optind]);
         
+        // make sure that the last character in full_path is "/"
+        auto length = gb_string_length(full_path);
+        if (full_path[length - 1] != '/' && *p_optind < argc) {
+            gb_string_appendc(full_path, "/");
+        }
+        gb_string_appendc(full_path, files[i].d_name);
+
         Stat sb = {};
-        stat(files[i].d_name, &sb);
-        
+        auto error = stat(full_path, &sb);
+        if ( error != 0) {
+            fprintf(stderr, "%s%s: %s\n", NORMAL_COLOR, strerror(errno), full_path);
+            exit(1);
+        }
+
         print_file(&files[i], &sb);
     }
     return 0;
 }
 
-
-//TODO: Align the columns correctly (especially for file sizes)
 void print_file(dirent* file, Stat* sb)
 {
-    gb_local_persist gbString color = gb_string_make_reserve(gb_heap_allocator(), 256);
-    gb_local_persist gbString file_size = gb_string_make_reserve(gb_heap_allocator(), 256);
-    defer(gb_string_clear(color));
-    defer(gb_string_clear(file_size));
+    gb_local_persist gbString color_str = gb_string_make_reserve(gb_heap_allocator(), 256);
+    gb_local_persist gbString file_size_str = gb_string_make_reserve(gb_heap_allocator(), 256);
+    defer(gb_string_clear(color_str));
+    defer(gb_string_clear(file_size_str));
 
     if (file->d_type == DT_DIR) {
-        gb_string_appendc(color, BLUE);
-        gb_string_appendc(color, BOLD);
+        gb_string_appendc(color_str, BLUE);
+        gb_string_appendc(color_str, BOLD);
     } else if (sb->st_mode & S_IEXEC) {
-        gb_string_appendc(color, GREEN);
-        gb_string_appendc(color, BOLD);
+        gb_string_appendc(color_str, GREEN);
+        gb_string_appendc(color_str, BOLD);
     } else {
-        gb_string_appendc(color, NORMAL_COLOR);
+        gb_string_appendc(color_str, NORMAL_COLOR);
     }
-
     if (BITTEST(flags, SHOW_FILE_SIZE)) {
-        gb_string_append_fmt(file_size, "%s%0.1f KB ", NORMAL_COLOR, f32(sb->st_size * 1.0 / gb_kilobytes(1)));
+        f32 file_size = sb->st_size;
+        gb_local_persist gbString unit_str = gb_string_make_reserve(gb_heap_allocator(), 5);                            
+        gb_string_appendc(unit_str, " B");
+        defer(gb_string_clear(unit_str));
+        
+        if (file_size > gb_kilobytes(1) && file_size < gb_megabytes(1)) {
+            gb_string_clear(unit_str);
+            gb_string_appendc(unit_str, "KB");
+            file_size /= gb_kilobytes(1);
+        } else if ( file_size > gb_megabytes(1) && file_size < gb_gigabytes(1)) {
+            gb_string_clear(unit_str);
+            gb_string_appendc(unit_str, "MB");
+            file_size /= gb_megabytes(1);
+        } else if ( file_size > gb_gigabytes(1) && file_size < gb_terabytes(1)) {
+            gb_string_clear(unit_str);
+            gb_string_appendc(unit_str, "GB");
+            file_size /= gb_gigabytes(1);
+        } else if ( file_size > gb_terabytes(1)) {
+            gb_string_clear(unit_str);
+            gb_string_appendc(unit_str, "TB");
+            file_size /= gb_terabytes(1);
+        }
+        
+        gb_string_append_fmt(file_size_str, "%s%5.1f %s ", NORMAL_COLOR, file_size, unit_str);
     }
-    gb_printf("%s%s%s\n", file_size, color, file->d_name);
+    gb_printf("%s%s%s\n", file_size_str, color_str, file->d_name);
 }
 // printf("Last file modification:   %s", ctime(&sb.st_mtime));
