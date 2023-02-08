@@ -1,0 +1,19 @@
+* my_unix
+Implementing my own version of the standard unix tools to improve my programming skills.
+
+* Current programs I'll try to implement
+- ls, pwd
+- wc
+- cat
+- head, tail
+
+* Cool things for the future
+- z clone
+- some grep like thing
+- tui text editor, with a few emacs like modes in it
+- fuzzy search program (like fzf)
+  
+* What to work on
+- [ ] globing functionality
+- [ ] make my own arg parsing library
+
