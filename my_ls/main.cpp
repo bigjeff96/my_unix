@@ -28,7 +28,7 @@ int main(int argc, char** argv)
     gbArray(dirent) files = NULL;
     gb_array_init(files, gb_heap_allocator());
     defer(gb_array_free(files));
-
+    
     int opt;
     while ((opt = getopt(argc, argv, "als")) != -1) {
         switch (opt) {
@@ -84,13 +84,13 @@ int main(int argc, char** argv)
         Stat sb = {};
         auto error = stat(full_path, &sb);
         if (error != 0) {
-            i32 padding = BITTEST(flags, SHOW_LAST_MOD_DATE) ? 14 : 0;
+            const char* no_time_str = "         null ";
             gb_local_persist auto zero_bytes = gb_string_make_reserve(gb_heap_allocator(), 100);
             if (BITTEST(flags, SHOW_FILE_SIZE))
                 zero_bytes = gb_string_append_fmt(zero_bytes, "%5d  B", 0);
 
-            if (padding != 0)
-                gb_printf("%s%*c%s%s%s", zero_bytes, padding, ' ', BOLD, RED_BACKGROUND, files[i].d_name);
+            if (BITTEST(flags, SHOW_LAST_MOD_DATE))
+                gb_printf("%s%s%s%s%s", zero_bytes, no_time_str, BOLD, RED_BACKGROUND, files[i].d_name);
             else
                 gb_printf("%s%s%s%s", zero_bytes, BOLD, RED_BACKGROUND, files[i].d_name);
             
