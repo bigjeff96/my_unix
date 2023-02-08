@@ -17,3 +17,5 @@ Implementing my own version of the standard unix tools to improve my programming
 - [ ] globing functionality
 - [ ] make my own arg parsing library
 
+* Library used
+gb.h from [[https://github.com/gingerBill][gingerBill]]
