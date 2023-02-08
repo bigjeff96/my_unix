@@ -1,8 +1,8 @@
 #include <errno.h>
 #include <string.h>
 #define GB_IMPLEMENTATION
-#include "../lib/bitset.h"
-#include "../lib/gb.h"
+#include "../../lib/bitset.h"
+#include "../../lib/gb.h"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
