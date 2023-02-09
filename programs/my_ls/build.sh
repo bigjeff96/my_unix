@@ -2,9 +2,9 @@
 
 CC="g++"
 DFLAGS="-Wall -Wextra -ggdb"
-MEM="-fsanitize=address"
+MEM="-fsanitize=undefined"
 
 set -e
-time $CC  $DFLAGS  -I . *.cpp -o my_ls.exe  2<&1 | grep -v -i gb.h
+time $CC  $DFLAGS $MEM  -I . *.cpp -o my_ls.exe  2<&1 | grep -v -i gb.h
 echo "--OUTPUT--"
 time ./my_ls.exe ~ -al
