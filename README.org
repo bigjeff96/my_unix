@@ -16,6 +16,7 @@ Implementing my own version of the standard unix tools to improve my programming
 * What to work on
 - [ ] globing functionality
 - [ ] make my own arg parsing library
+- [ ] Make use of stdin such that you can pipe programs together
 
 * Library used
 gb.h from [[https://github.com/gingerBill/gb][gingerBill]]

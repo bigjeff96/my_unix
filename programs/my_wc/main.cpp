@@ -1,3 +1,4 @@
+#include <cstdio>
 #define GB_IMPLEMENTATION
 #include "../../lib/bitset.h"
 #include "../../lib/gb.h"
@@ -16,6 +17,7 @@ gb_global b8 flags[BITNSLOTS(FLAGS_COUNT)] = {};
 
 int main(int argc, char** argv) {
 
+    // TODO: if no file is passed as arg, read stdin
     if (argc == 1) {
         gb_printf_err("Usage: %s [file]\n", argv[0]);
         gb_exit(1);
@@ -24,8 +26,29 @@ int main(int argc, char** argv) {
     auto file = gb_file_read_contents(gb_heap_allocator(), 1, argv[1]);
     defer(gb_file_free_contents(&file));
 
-    printf("%s\n", (char*)(file.data));
+    isize total_lignes = 0;
+    isize total_bytes = file.size;
+    isize total_words = 0;
+    isize total_white_space = 0;
 
+    for (isize i = 0; i < file.size; i++) {
+        char* current_character = (char*)file.data + i;
+        
+        if (*current_character == '\n')
+            total_lignes++;
+
+        //TODO: make better method, since this ignores things like '(bob is dead)' and '}' is a word
+        if (gb_char_is_space(*current_character))
+            total_white_space++;
+    }
+
+    if (file.size > 0) {
+        total_words = total_white_space > 0 ? total_white_space - 1 : 1;
+    }
+
+    printf("total lignes: %ld\n", total_lignes);
+    printf("total bytes: %ld\n", total_bytes);
+    printf("total words: %ld\n", total_words);
     return 0;
 }
 
