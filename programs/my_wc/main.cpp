@@ -1,4 +1,3 @@
-#include <cstdio>
 #define GB_IMPLEMENTATION
 #include "../../lib/bitset.h"
 #include "../../lib/gb.h"
@@ -22,15 +21,15 @@ int main(int argc, char** argv)
     if (argc == 1) {
         auto input_file = gb_file_get_standard(gbFileStandard_Input);
         isize file_size = gb_file_size(input_file);
-        
+
         if (!file_size) {
-            //FIXME: can't read piped data like 'head main.cpp | ./my_wc.exe', I get 0 file size
+            // FIXME: can't read piped data like 'head main.cpp | ./my_wc.exe', I get 0 file size
             printf("ERROR: empty stdin\n");
             gb_exit(1);
         }
-        
+
         buffer = gb_string_make_reserve(gb_heap_allocator(), file_size);
-        auto good = gb_file_read(input_file, buffer, gb_string_capacity(buffer));
+        b32 good = gb_file_read(input_file, buffer, gb_string_capacity(buffer));
         GB_STRING_HEADER(buffer)->length = file_size;
         if (!good) {
             printf("ERROR:\n");
@@ -48,21 +47,21 @@ int main(int argc, char** argv)
     isize total_bytes = gb_string_length(buffer);
     isize total_words = 0;
     isize total_white_space = 0;
+    bool in_word = false;
 
     for (isize i = 0; i < gb_string_length(buffer); i++) {
         char* current_character = buffer + i;
-
-        if (*current_character == '\n')
-            total_lignes++;
-
-        // TODO: make better method, since this ignores things like '(bob is dead)' and '}' is a word
-        if (gb_char_is_space(*current_character))
-            total_white_space++;
+        if (!gb_char_is_space(*current_character)) {
+            in_word = true;
+        } else {
+            if (*current_character == '\n')
+                total_lignes++;
+            if (in_word) {
+                total_words++;
+                in_word = false;
+            }
+        }
     }
-
-    if (gb_string_length(buffer) > 0)
-        total_words = total_white_space > 0 ? total_white_space - 1 : 1;
-
     printf("total lignes: %ld\n", total_lignes);
     printf("total bytes: %ld\n", total_bytes);
     printf("total words: %ld\n", total_words);
