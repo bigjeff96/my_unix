@@ -1,14 +1,6 @@
 #define GB_IMPLEMENTATION
 #include "../../lib/gb.h"
-#include <unistd.h>
 
-#define NORMAL_COLOR "\x1B[0m"
-#define GREEN "\x1B[32m"
-#define BLUE "\x1B[34m"
-#define RED "\x1B[31m"
-#define BOLD "\x1B[1m"
-#define RED_BACKGROUND "\x1B[41m"
-#define DEFAULT_BACKGROUND "\x1B[49m"
 typedef enum { COUNT_LINES, COUNT_WORDS, COUNT_BYTES, FLAGS_COUNT } FLAGS;
 const char* flags_str = "wlc";
 
