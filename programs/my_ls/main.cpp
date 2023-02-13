@@ -1,11 +1,7 @@
-#include <errno.h>
-#include <string.h>
 #define GB_IMPLEMENTATION
-#include "../../lib/bitset.h"
 #include "../../lib/gb.h"
+#include <string.h>
 #include <dirent.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #define NORMAL_COLOR "\x1B[0m"
 #define GREEN "\x1B[32m"
@@ -15,12 +11,12 @@
 #define RED_BACKGROUND "\x1B[41m"
 #define DEFAULT_BACKGROUND "\x1B[49m"
 typedef struct stat Stat;
-typedef enum { SHOW_DOT_FILES, SHOW_FILE_SIZE, SHOW_LAST_MOD_DATE,FLAGS_COUNT } FLAGS;
+typedef enum { SHOW_DOT_FILES, SHOW_FILE_SIZE, SHOW_LAST_MOD_DATE, FLAGS_COUNT } FLAGS;
 
 void print_file(dirent* file, Stat* sb);
 int sort_files_and_dirs(const void* a, const void* b);
 
-gb_global b8 flags[BITNSLOTS(FLAGS_COUNT)] = {};
+gb_global gbBitset flags[GB_FLAGS_ARRAY_SIZE(FLAGS_COUNT)] = {};
 
 int main(int argc, char** argv)
 {
@@ -28,19 +24,19 @@ int main(int argc, char** argv)
     gbArray(dirent) files = NULL;
     gb_array_init(files, gb_heap_allocator());
     defer(gb_array_free(files));
-    
+
     int opt;
     while ((opt = getopt(argc, argv, "als")) != -1) {
         switch (opt) {
         case 'a':
-            BITSET(flags, SHOW_DOT_FILES);
+            GB_FLAGS_SET(flags, SHOW_DOT_FILES);
             break;
         case 's':
-            BITSET(flags, SHOW_FILE_SIZE);
+            GB_FLAGS_SET(flags, SHOW_FILE_SIZE);
             break;
         case 'l':
-            BITSET(flags, SHOW_LAST_MOD_DATE);
-            BITSET(flags, SHOW_FILE_SIZE);
+            GB_FLAGS_SET(flags, SHOW_LAST_MOD_DATE);
+            GB_FLAGS_SET(flags, SHOW_FILE_SIZE);
             break;
         default:
             gb_printf_err("Usage: %s [-asl] [directory...]\n", argv[0]);
@@ -67,7 +63,7 @@ int main(int argc, char** argv)
 
     defer(printf("%s", NORMAL_COLOR));
     for (int i = 0; i < gb_array_count(files); i++) {
-        if ((files[i].d_name[0] == '.' && !BITTEST(flags, SHOW_DOT_FILES)))
+        if ((files[i].d_name[0] == '.' && !GB_FLAGS_TEST(flags, SHOW_DOT_FILES)))
             continue;
 
         gb_local_persist gbString full_path = gb_string_make_reserve(gb_heap_allocator(), 256);
@@ -86,18 +82,18 @@ int main(int argc, char** argv)
         if (error != 0) {
             const char* no_time_str = "         null ";
             gb_local_persist auto zero_bytes = gb_string_make_reserve(gb_heap_allocator(), 100);
-            if (BITTEST(flags, SHOW_FILE_SIZE))
+            if (GB_FLAGS_TEST(flags, SHOW_FILE_SIZE))
                 zero_bytes = gb_string_append_fmt(zero_bytes, "%5d  B", 0);
 
-            if (BITTEST(flags, SHOW_LAST_MOD_DATE))
+            if (GB_FLAGS_TEST(flags, SHOW_LAST_MOD_DATE))
                 gb_printf("%s%s%s%s%s", zero_bytes, no_time_str, BOLD, RED_BACKGROUND, files[i].d_name);
             else
                 gb_printf("%s%s%s%s", zero_bytes, BOLD, RED_BACKGROUND, files[i].d_name);
-            
+
             gb_printf("%s%s\n", DEFAULT_BACKGROUND, NORMAL_COLOR);
             continue;
         }
-        
+
         print_file(&files[i], &sb);
     }
     return 0;
@@ -111,7 +107,7 @@ void print_file(dirent* file, Stat* sb)
     auto allocator = gb_arena_allocator(&arena);
     auto temp = gb_temp_arena_memory_begin(&arena);
     defer(gb_temp_arena_memory_end(temp));
-    
+
     auto color_str = gb_string_make_reserve(allocator, 20);
     auto unit_str = gb_string_make_reserve(allocator, 5);
     auto file_size_str = gb_string_make_reserve(allocator, 256);
@@ -126,7 +122,7 @@ void print_file(dirent* file, Stat* sb)
     } else {
         color_str = gb_string_appendc(color_str, NORMAL_COLOR);
     }
-    if (BITTEST(flags, SHOW_FILE_SIZE)) {
+    if (GB_FLAGS_TEST(flags, SHOW_FILE_SIZE)) {
         f32 file_size = sb->st_size;
         unit_str = gb_string_appendc(unit_str, " B");
         defer(gb_string_clear(unit_str));
@@ -153,8 +149,8 @@ void print_file(dirent* file, Stat* sb)
 
     gbString last_mod_str = NULL;
 
-    if (BITTEST(flags, SHOW_LAST_MOD_DATE)) {
-        last_mod_full_str = gb_string_append_fmt(last_mod_full_str,"%s", ctime(&sb->st_mtime));
+    if (GB_FLAGS_TEST(flags, SHOW_LAST_MOD_DATE)) {
+        last_mod_full_str = gb_string_append_fmt(last_mod_full_str, "%s", ctime(&sb->st_mtime));
         last_mod_full_str = gb_string_trim(last_mod_full_str, "\n");
         auto length = gb_string_length(last_mod_full_str);
         last_mod_str = gb_string_make_reserve(allocator, 50);
@@ -163,7 +159,7 @@ void print_file(dirent* file, Stat* sb)
     } else {
         last_mod_str = gb_string_make(allocator, "");
     }
-    
+
     gb_printf("%s%s%s%s\n", file_size_str, last_mod_str, color_str, file->d_name);
 }
 

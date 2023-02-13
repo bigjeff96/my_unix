@@ -2156,11 +2156,10 @@ GB_DEF u64 gb_endian_swap64(u64 i);
 
 GB_DEF isize gb_count_set_bits(u64 mask);
 
-GB_DEF void gb_flags_clear(b8* flags, isize number_of_flags);
-GB_DEF void gb_flags_activate_all(b8* flags, isize number_of_flags);
-GB_DEF bool gb_flags_is_empty(b8* flags, isize number_of_flags);
-
 typedef b8 gbBitset;
+GB_DEF void gb_flags_clear(gbBitset* flags, isize number_of_flags);
+GB_DEF void gb_flags_activate_all(gbBitset* flags, isize number_of_flags);
+GB_DEF bool gb_flags_is_empty(gbBitset* flags, isize number_of_flags);
 
 #define CHAR_BIT 8
 #define BITMASK(b) (1 << ((b) % CHAR_BIT))
