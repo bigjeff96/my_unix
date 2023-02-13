@@ -5,7 +5,6 @@ typedef enum { COUNT_LINES, COUNT_WORDS, COUNT_BYTES, FLAGS_COUNT } FLAGS;
 const char* flags_str = "wlc";
 
 gb_global gbBitset flags[GB_FLAGS_ARRAY_SIZE(FLAGS_COUNT)] = { 0 };
-gb_global isize flags_array_size = GB_FLAGS_ARRAY_SIZE(FLAGS_COUNT);
 
 int main(int argc, char** argv)
 {
@@ -87,4 +86,3 @@ int main(int argc, char** argv)
         printf("total words: %ld\n", total_words);
     return 0;
 }
-
