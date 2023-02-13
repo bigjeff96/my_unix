@@ -2156,6 +2156,20 @@ GB_DEF u64 gb_endian_swap64(u64 i);
 
 GB_DEF isize gb_count_set_bits(u64 mask);
 
+GB_DEF void gb_flags_clear(b8* flags, isize number_of_flags);
+GB_DEF void gb_flags_activate_all(b8* flags, isize number_of_flags);
+GB_DEF bool gb_flags_is_empty(b8* flags, isize number_of_flags);
+
+typedef b8 gbBitset;
+
+#define CHAR_BIT 8
+#define BITMASK(b) (1 << ((b) % CHAR_BIT))
+#define BITSLOT(b) ((b) / CHAR_BIT)
+#define GB_FLAGS_SET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
+#define GB_FLAGS_CLEAR(a, b) ((a)[BITSLOT(b)] &= ~BITMASK(b))
+#define GB_FLAGS_TEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b))
+#define GB_FLAGS_ARRAY_SIZE(nb) ((nb + CHAR_BIT - 1) / CHAR_BIT)
+
 ////////////////////////////////////////////////////////////////
 //
 // Platform Stuff
@@ -9026,8 +9040,28 @@ gb_inline isize gb_count_set_bits(u64 mask) {
 	return count;
 }
 
+gb_inline void gb_flags_clear(gbBitset* flags, isize number_of_flags)
+{
+    isize array_size = GB_FLAGS_ARRAY_SIZE(number_of_flags);
+    flags = cast(gbBitset*) gb_memset(flags, 0, gb_size_of(gbBitset) * array_size);
+}
 
+gb_inline void gb_flags_activate_all(gbBitset* flags, isize number_of_flags)
+{
+    isize array_size = GB_FLAGS_ARRAY_SIZE(number_of_flags);
+    flags = cast(gbBitset*) gb_memset(flags, U8_MAX, gb_size_of(gbBitset) * array_size);
+}
 
+gb_inline bool gb_flags_is_empty(gbBitset* flags, isize number_of_flags)
+{
+    bool result = true;
+    for (i32 i = 0; i < number_of_flags; i++)
+        if (GB_FLAGS_TEST(flags, i)) {
+            result = false;
+            break;
+        }
+    return result;
+}
 
 
 

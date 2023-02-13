@@ -17,4 +17,4 @@ FLAGS=$([ $DEBUG == 1 ] && echo $DFLAGS || echo $OPFLAGS)
 set -e
 time $CC $FLAGS $MEM_FLAG  -I . *.cpp -o $PROG_NAME
 echo "--OUTPUT--"
-eval "time ./$PROG_NAME main.cpp"
+eval "time ./$PROG_NAME  main.cpp"

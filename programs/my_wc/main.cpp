@@ -1,5 +1,4 @@
 #define GB_IMPLEMENTATION
-#include "../../lib/bitset.h"
 #include "../../lib/gb.h"
 #include <unistd.h>
 
@@ -11,14 +10,41 @@
 #define RED_BACKGROUND "\x1B[41m"
 #define DEFAULT_BACKGROUND "\x1B[49m"
 typedef enum { COUNT_LINES, COUNT_WORDS, COUNT_BYTES, FLAGS_COUNT } FLAGS;
+const char* flags_str = "wlc";
 
-gb_global b8 flags[BITNSLOTS(FLAGS_COUNT)] = {};
+gb_global gbBitset flags[GB_FLAGS_ARRAY_SIZE(FLAGS_COUNT)] = { 0 };
+gb_global isize flags_array_size = GB_FLAGS_ARRAY_SIZE(FLAGS_COUNT);
 
 int main(int argc, char** argv)
 {
+
+    // parsing the args with the flags
+    int opt;
+    while ((opt = getopt(argc, argv, flags_str)) != -1) {
+        switch (opt) {
+        case 'w':
+            GB_FLAGS_SET(flags, COUNT_WORDS);
+            break;
+        case 'l':
+            GB_FLAGS_SET(flags, COUNT_LINES);
+            break;
+        case 'c':
+            GB_FLAGS_SET(flags, COUNT_BYTES);
+            break;
+        default:
+            gb_printf_err("Usage: %s [-%s] [file]\n", argv[0], flags_str);
+            gb_exit(1);
+        }
+    }
+
+    if (gb_flags_is_empty(flags, FLAGS_COUNT))
+        gb_flags_activate_all(flags, FLAGS_COUNT);
+
+    int* p_optind = &optind;
+
     gbString buffer = {};
     defer(gb_string_free(buffer));
-    if (argc == 1) {
+    if (*p_optind >= argc) {
         auto input_file = gb_file_get_standard(gbFileStandard_Input);
         isize file_size = gb_file_size(input_file);
 
@@ -36,7 +62,7 @@ int main(int argc, char** argv)
             gb_exit(1);
         }
     } else {
-        auto file = gb_file_read_contents(gb_heap_allocator(), 1, argv[1]);
+        auto file = gb_file_read_contents(gb_heap_allocator(), 1, argv[*p_optind]);
         buffer = cast(char*) file.data;
         GB_STRING_HEADER(buffer)->allocator = file.allocator;
         GB_STRING_HEADER(buffer)->length = file.size;
@@ -61,37 +87,12 @@ int main(int argc, char** argv)
             }
         }
     }
-    printf("total lignes: %ld\n", total_lignes);
-    printf("total bytes: %ld\n", total_bytes);
-    printf("total words: %ld\n", total_words);
+    if (GB_FLAGS_TEST(flags, COUNT_LINES))
+        printf("total lignes: %ld\n", total_lignes);
+    if (GB_FLAGS_TEST(flags, COUNT_BYTES))
+        printf("total bytes: %ld\n", total_bytes);
+    if (GB_FLAGS_TEST(flags, COUNT_WORDS))
+        printf("total words: %ld\n", total_words);
     return 0;
 }
 
-// int opt;
-// while ((opt = getopt(argc, argv, "als")) != -1) {
-//     switch (opt) {
-//     case 'a':
-//         BITSET(flags, SHOW_DOT_FILES);
-//         break;
-//     case 's':
-//         BITSET(flags, SHOW_FILE_SIZE);
-//         break;
-//     case 'l':
-//         BITSET(flags, SHOW_LAST_MOD_DATE);
-//         BITSET(flags, SHOW_FILE_SIZE);
-//         break;
-//     default:
-//         gb_printf_err("Usage: %s [-asl] [directory...]\n", argv[0]);
-//         gb_exit(1);
-//     }
-// }
-// int* p_optind = &optind;
-// if (*p_optind >= argc) {
-//     d = opendir(".");
-// } else {
-//     d = opendir(argv[*p_optind]);
-// }
-// if (!d) {
-//     gb_printf_err("%s%s\n", NORMAL_COLOR, strerror(errno));
-//     gb_exit(1);
-// }
