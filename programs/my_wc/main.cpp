@@ -50,11 +50,10 @@ int main(int argc, char** argv)
     bool in_word = false;
 
     for (isize i = 0; i < gb_string_length(buffer); i++) {
-        char* current_character = buffer + i;
-        if (!gb_char_is_space(*current_character)) {
+        if (!gb_char_is_space(buffer[i])) {
             in_word = true;
         } else {
-            if (*current_character == '\n')
+            if (buffer[i] == '\n')
                 total_lignes++;
             if (in_word) {
                 total_words++;
