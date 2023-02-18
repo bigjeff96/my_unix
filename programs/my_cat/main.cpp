@@ -29,33 +29,5 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-// int opt;
-// while ((opt = getopt(argc, argv, "als")) != -1) {
-//     switch (opt) {
-//     case 'a':
-//         BITSET(flags, SHOW_DOT_FILES);
-//         break;
-//     case 's':
-//         BITSET(flags, SHOW_FILE_SIZE);
-//         break;
-//     case 'l':
-//         BITSET(flags, SHOW_LAST_MOD_DATE);
-//         BITSET(flags, SHOW_FILE_SIZE);
-//         break;
-//     default:
-//         gb_printf_err("Usage: %s [-asl] [directory...]\n", argv[0]);
-//         gb_exit(1);
-//     }
-// }
-// int* p_optind = &optind;
-// if (*p_optind >= argc) {
-//     d = opendir(".");
-// } else {
-//     d = opendir(argv[*p_optind]);
-// }
-// if (!d) {
-//     gb_printf_err("%s%s\n", NORMAL_COLOR, strerror(errno));
-//     gb_exit(1);
-// }
 
 
