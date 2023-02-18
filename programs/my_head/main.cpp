@@ -44,16 +44,16 @@ int main(int argc, char** argv)
     }
 
     if (max_new_lines != 0) {
-        //TODO: allow to use program with text files with less than 10 lines
+        // TODO: allow to use program with text files with less than 10 lines
         gb_printf_err("ERROR: file with less than 10 newlines at start\n");
         gb_exit(1);
     }
 
     char* start_point = buffer;
     while (start_point++ != end_point) {
-        //TODO: not very efficient, but since its only 10 lines, doesn't really matter I guess
+        // TODO: not very efficient, but since its only 10 lines, doesn't really matter I guess
         printf("%c", *start_point);
     }
-    
+
     return 0;
 }
