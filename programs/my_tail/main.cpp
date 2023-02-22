@@ -1,26 +1,7 @@
 #define GB_IMPLEMENTATION
 #include "../../lib/gb.h"
 
-int main(int argc, char** argv) {
-    gbArray(gbString) strings;
-    gb_array_init_reserve(strings, gb_heap_allocator(), 50);
-    defer(gb_array_free(strings));
-    isize total_strings = 50;
-    
-    for (isize i = 0; i < total_strings; i++) {
-        strings[i] = gb_string_make_length(gb_heap_allocator(), "bob", 3);
-    }
-
-    for (isize i = 0; i < total_strings; i++) {
-        printf("%s\n", strings[i]);
-    }
-
-    for (isize i = 0; i < total_strings; i++) {
-        gb_string_free(strings[i]);
-    }
-}
-
-int main1(int argc, char** argv)
+int main(int argc, char** argv)
 {
     gbString buffer = {};
     defer(gb_string_free(buffer));
